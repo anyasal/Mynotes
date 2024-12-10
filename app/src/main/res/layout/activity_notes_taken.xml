@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/Lavender"
+    >
+
+    <!-- Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar_notes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="6dp"
+        app:title="mynotes"
+        app:titleTextColor="@color/Crimson" />
+
+    <!-- Save Button -->
+    <ImageView
+        android:id="@+id/imageView_save"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        android:src="@drawable/ic_save"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="20dp"
+        android:layout_marginTop="?attr/actionBarSize" />
+
+    <!-- Title Input -->
+    <EditText
+        android:id="@+id/edittext_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/toolbar_notes"
+        android:hint="Title: "
+        android:padding="8dp"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:textColor="@color/black"
+        android:textColorHint="@color/black"
+        android:singleLine="true"
+        android:minHeight="48dp" />
+
+    <!-- Notes Input -->
+    <EditText
+        android:id="@+id/edittext_notes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/edittext_title"
+        android:hint="Text: "
+        android:padding="8dp"
+        android:textStyle="normal"
+        android:textSize="16sp"
+        android:textColor="@color/black"
+        android:textColorHint="@color/black"
+        android:minHeight="48dp" />
+</RelativeLayout>
