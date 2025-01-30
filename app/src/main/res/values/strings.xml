@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">mynotes</string>
+    <string name="title_activity_main_user">MainActivityUser</string>
 </resources>

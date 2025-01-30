@@ -2,21 +2,18 @@ package com.example.mynotes;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.appcompat.widget.SearchView;
 import androidx.cardview.widget.CardView;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
@@ -28,7 +25,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuItemClickListener {
     RecyclerView recyclerView;
@@ -38,36 +34,49 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     List<Notes> notes = new ArrayList<>();
     SearchView searchView_home;
     Notes selectedNote;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+        // Проверка авторизации
+        if (!isUserLoggedIn()) {
+            redirectToLogin();
+            return;
+        }
+        if (!isUserLoggedIn()) {
+            redirectToLogin();
+            return;
+        }
         setContentView(R.layout.activity_main);
-
+        initializeComponents();
+        setupDatabase();
+        setupRecyclerView();
+        setupListeners();
+    }
+    private void initializeComponents() {
         recyclerView = findViewById(R.id.recycler_home);
         fab_add = findViewById(R.id.fad_add);
-
         searchView_home = findViewById(R.id.searchView_home);
-
+    }
+    private void setupDatabase() {
         database = RoomDB.getInstance(this);
         notes = database.mainDao().getAll();
-        updateRecycle(notes);
-
-        fab_add.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, NotesTakenActivity.class);
-                startActivityForResult(intent, 101);
-            }
+    }
+    private void setupRecyclerView() {
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setLayoutManager(new StaggeredGridLayoutManager(2, LinearLayoutManager.VERTICAL));
+        notesListAdapter = new NotesListAdapter(MainActivity.this, notes, notesClickListener);
+        recyclerView.setAdapter(notesListAdapter);
+    }
+    private void setupListeners() {
+        fab_add.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, NotesTakenActivity.class);
+            startActivityForResult(intent, 101);
         });
-
         searchView_home.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 return false;
             }
-
             @Override
             public boolean onQueryTextChange(String newText) {
                 filter(newText);
@@ -75,7 +84,15 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             }
         });
     }
-
+    private boolean isUserLoggedIn() {
+        SharedPreferences prefs = getSharedPreferences("auth", MODE_PRIVATE);
+        return prefs.getBoolean("isLoggedIn", false);
+    }
+    private void redirectToLogin() {
+        startActivity(new Intent(this, LoginActivity.class));
+        finish();
+    }
+    // Остальные методы остаются без изменений
     private void filter(String newText) {
         List<Notes> filteredList = new ArrayList<>();
         for (Notes singleNote : notes) {
@@ -86,36 +103,23 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         }
         notesListAdapter.filterList(filteredList);
     }
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == 101) {
-            if (resultCode == Activity.RESULT_OK) {
-                Notes new_notes = (Notes) data.getSerializableExtra("note");
-                database.mainDao().insert(new_notes);
-                notes.clear();
-                notes.addAll(database.mainDao().getAll());
-                notesListAdapter.notifyDataSetChanged();
-            }
+        if (requestCode == 101 && resultCode == Activity.RESULT_OK) {
+            Notes new_notes = (Notes) data.getSerializableExtra("note");
+            database.mainDao().insert(new_notes);
+            notes.clear();
+            notes.addAll(database.mainDao().getAll());
+            notesListAdapter.notifyDataSetChanged();
+        } else if (requestCode == 102 && resultCode == Activity.RESULT_OK) {
+            Notes new_notes = (Notes) data.getSerializableExtra("note");
+            database.mainDao().update(new_notes.getId(), new_notes.getTitle(), new_notes.getNotes());
+            notes.clear();
+            notes.addAll(database.mainDao().getAll());
+            notesListAdapter.notifyDataSetChanged();
         }
-        if (requestCode == 102) {
-            if (resultCode == Activity.RESULT_OK) {
-                Notes new_notes = (Notes) data.getSerializableExtra("note");
-                database.mainDao().update(new_notes.getId(), new_notes.getTitle(), new_notes.getNotes());
-                notes.clear();
-                notes.addAll(database.mainDao().getAll());
-                notesListAdapter.notifyDataSetChanged();
-            }
-        }
-    }
-
-    private void updateRecycle(List<Notes> notes) {
-        recyclerView.setHasFixedSize(true);
-        recyclerView.setLayoutManager(new StaggeredGridLayoutManager(2, LinearLayoutManager.VERTICAL));
-        notesListAdapter = new NotesListAdapter(MainActivity.this, notes, notesClickListener);
-        recyclerView.setAdapter(notesListAdapter);
     }
 
     private final NotesClickListener notesClickListener = new NotesClickListener() {
@@ -128,7 +132,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 
         @Override
         public void onLongClick(Notes notes, CardView cardView) {
-            selectedNote = new Notes();
             selectedNote = notes;
             showPopup(cardView);
         }
@@ -144,24 +147,24 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     @Override
     public boolean onMenuItemClick(MenuItem item) {
         if (item.getItemId() == R.id.pin) {
-            if (selectedNote.isPinned()) {
-                database.mainDao().pin(selectedNote.getId(), false);
-                Toast.makeText(MainActivity.this, "Unpinned", Toast.LENGTH_SHORT).show();
-            } else {
-                database.mainDao().pin(selectedNote.getId(), true);
-                Toast.makeText(MainActivity.this, "Pinned", Toast.LENGTH_SHORT).show();
-            }
-            notes.clear();
-            notes.addAll(database.mainDao().getAll());
-            notesListAdapter.notifyDataSetChanged();
+            database.mainDao().pin(selectedNote.getId(), !selectedNote.isPinned());
+            Toast.makeText(this, selectedNote.isPinned() ? "Unpinned" : "Pinned", Toast.LENGTH_SHORT).show();
+            updateNotesList();
             return true;
         } else if (item.getItemId() == R.id.delete) {
             database.mainDao().delete(selectedNote);
             notes.remove(selectedNote);
             notesListAdapter.notifyDataSetChanged();
-            Toast.makeText(MainActivity.this, "Note deleted", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Note deleted", Toast.LENGTH_SHORT).show();
             return true;
         }
         return false;
     }
+
+    private void updateNotesList() {
+        notes.clear();
+        notes.addAll(database.mainDao().getAll());
+        notesListAdapter.notifyDataSetChanged();
+    }
+
 }

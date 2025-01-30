@@ -1,21 +1,17 @@
 package com.example.mynotes.Database;
-
 import static androidx.room.OnConflictStrategy.REPLACE;
-
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
-import androidx.room.Update;
-
-
 import com.example.mynotes.Models.Notes;
-
+import com.example.mynotes.Models.User;
 import java.util.List;
 
 @Dao
 public interface MainDAO {
 
+    // Методы для работы с заметками
     @Insert(onConflict = REPLACE)
     void insert(Notes notes);
 
@@ -29,52 +25,16 @@ public interface MainDAO {
     void delete(Notes notes);
 
     @Query("UPDATE notes SET pinned = :pin WHERE id = :id")
-    void  pin (int id, boolean pin);
+    void  pin(int id, boolean pin);
+
+    // Методы для работы с пользователями
+    @Insert(onConflict = REPLACE)
+    void insertUser(User user);
+
+    @Query("SELECT * FROM users WHERE login = :login LIMIT 1")
+    User getUserByLogin(String login);
+
+    @Query("SELECT COUNT(*) FROM users WHERE login = :login")
+    int checkLoginExists(String login);
 
 }
-
-//
-//
-//package com.example.mynotes.Database;
-//
-//import androidx.room.Dao;
-//import androidx.room.Delete;
-//import androidx.room.Insert;
-//import androidx.room.Query;
-//import androidx.room.Update;
-//
-//import com.example.mynotes.Models.Notes;
-//
-//import java.util.List;
-//
-//@Dao
-//public interface MainDAO {
-//   @Insert
-//   void insert(Notes note);
-//
-//   @Update
-//   void update(Notes note);
-//
-//   @Delete
-//   void delete(Notes note);
-//
-//   @Query("SELECT * FROM notes ORDER BY ID DESC")
-//   List<Notes> getAll(); // Используем getAll
-//}
-//@Dao
-//public interface MainDAO {
-//   @Insert
-//   void insert(Notes note);
-//
-//   @Update
-//   void update(Notes note);
-//
-//   @Delete
-//   void delete(Notes note);
-//
-//   @Query("SELECT * FROM notes ORDER BY id DESC") // Теперь столбец "id" должен быть виден
-//   List<Notes> getAll();
-//
-//   @Query("UPDATE notes SET title = :title, notes = :notes WHERE id = :id")
-//   void update(int id, String title, String notes);
-
