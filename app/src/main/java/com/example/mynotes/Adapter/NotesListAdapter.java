@@ -11,7 +11,6 @@ import androidx.cardview.widget.CardView;
 import com.example.mynotes.Models.Notes;
 import com.example.mynotes.NotesClickListener;
 import com.example.mynotes.R;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
